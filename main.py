@@ -21,61 +21,46 @@ for record_folder in records_folders:
         else:
             entity_files_dict[entity_name] += entity_records_paths
 
-for key, value in entity_files_dict.items():
-    print('entity:', key)
-    print('audio files:', value)
-
-
 '''
 ШАГ 2
 ПРИВОДИМ К ВЕКТОРНОМУ ВИДУ
 '''
 
-import scipy.signal as signal
-
-audio_file = './resources/Аудиозапись7/д’/д’271.wav'
-# sample_rate, signal_data = wavfileggi.read(audio_file)
-
 import librosa
+import pandas as pd
 
 # mfcc
-for key, value in entity_files_dict.items():
-    signal, sample_rate = librosa.load(audio_file, sr=None)
-    mfcc = librosa.feature.mfcc(y=signal, sr=sample_rate)
-    print(mfcc.shape)
+# for entity, files in entity_files_dict.items():
+#     for file in files:
+#         print('entity:', entity)
+#         print('file:', file)
+#         signal, sample_rate = librosa.load(file)
+#         mfcc = librosa.feature.mfcc(y=signal, sr=sample_rate)
+#         print(mfcc.shape)
+#         print(mfcc)
 
-import numpy as np
-# fft
-fft = np.fft.fft(signal)
-magnitude = np.abs(fft)
-frequency = np.linspace(0, sample_rate, len(magnitude))
-
-print(magnitude)
-print(frequency)
-
+data = []
 # lpc
-for key, value in entity_files_dict.items():
-    y, sr = librosa.load(audio_file, sr=None)
-    lpc = librosa.lpc(y, order=16)
-    print(lpc)
-    # signal, sample_rate = librosa.load(audio_file, sr=None)
-    # frame_length = int(sample_rate * 0.025)
-    # frame_step = int(sample_rate * 0.010)
-    # frames = signal.frame(signal_data, frame_length, frame_step)
+for entity, files in entity_files_dict.items():
+    for file in files:
+        y, sr = librosa.load(file)
+        lpc = librosa.lpc(y, order=16)
+        coeffs = lpc.tolist()[1::]
+        data.append(coeffs + [entity])
 
-    # n_fft = frame_length  # размер окна для STFT
-    # stft = np.abs(signal.stft(signal_data, nperseg=n_fft)[2])[:, :frames.shape[1]]
-
-    # order = 12  # порядок LPC
-    # lpc_coeffs = np.zeros((frames.shape[1], order + 1))
-    # for i in range(frames.shape[1]):
-    #     lpc_coeffs[i] = signal.lpc(frames[:, i], order)
-    # print(lpc_coeffs)
+df = pd.DataFrame(data, columns=[str(i) for i in range(16)] + ['entity'])
 
 '''
 ШАГ 3
 РАЗБИВАЕМ НА ОБУЧАЮЩУЮ И ТЕСТОВУЮ ВЫБОРКИ
 '''
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test = train_test_split(df, test_size=0.33, random_state=42)
+
+print(X_train)
+print(X_test)
 
 '''
 ШАГ 4
