@@ -33,15 +33,15 @@ for key, value in entity_files_dict.items():
 
 import scipy.signal as signal
 
-audio_file = "audio_file.wav"
-sample_rate, signal_data = wavfile.read(audio_file)
+audio_file = './resources/Аудиозапись7/д’/д’271.wav'
+# sample_rate, signal_data = wavfileggi.read(audio_file)
 
 import librosa
 
 # mfcc
 for key, value in entity_files_dict.items():
     signal, sample_rate = librosa.load(audio_file, sr=None)
-    mfcc = librosa.feature.mfcc(signal, sr=sample_rate, n_mfcc=13)
+    mfcc = librosa.feature.mfcc(y=signal, sr=sample_rate)
     print(mfcc.shape)
 
 import numpy as np
@@ -54,19 +54,23 @@ print(magnitude)
 print(frequency)
 
 # lpc
-frame_length = int(sample_rate * 0.025)
-frame_step = int(sample_rate * 0.010)
-frames = signal.frame(signal_data, frame_length, frame_step)
+for key, value in entity_files_dict.items():
+    y, sr = librosa.load(audio_file, sr=None)
+    lpc = librosa.lpc(y, order=16)
+    print(lpc)
+    # signal, sample_rate = librosa.load(audio_file, sr=None)
+    # frame_length = int(sample_rate * 0.025)
+    # frame_step = int(sample_rate * 0.010)
+    # frames = signal.frame(signal_data, frame_length, frame_step)
 
-n_fft = frame_length  # размер окна для STFT
-stft = np.abs(signal.stft(signal_data, nperseg=n_fft)[2])[:, :frames.shape[1]]
+    # n_fft = frame_length  # размер окна для STFT
+    # stft = np.abs(signal.stft(signal_data, nperseg=n_fft)[2])[:, :frames.shape[1]]
 
-order = 12  # порядок LPC
-lpc_coeffs = np.zeros((frames.shape[1], order + 1))
-for i in range(frames.shape[1]):
-    lpc_coeffs[i] = signal.lpc(frames[:, i], order)
-
-print(lpc_coeffs)
+    # order = 12  # порядок LPC
+    # lpc_coeffs = np.zeros((frames.shape[1], order + 1))
+    # for i in range(frames.shape[1]):
+    #     lpc_coeffs[i] = signal.lpc(frames[:, i], order)
+    # print(lpc_coeffs)
 
 '''
 ШАГ 3
