@@ -39,16 +39,33 @@ import pandas as pd
 #         print(mfcc.shape)
 #         print(mfcc)
 
-data = []
+coeffs = []
+entities = []
 # lpc
 for entity, files in entity_files_dict.items():
     for file in files:
         y, sr = librosa.load(file)
         lpc = librosa.lpc(y, order=16)
-        coeffs = lpc.tolist()[1::]
-        data.append(coeffs + [entity])
+        entity_coeffs = lpc.tolist()[1::]
+        coeffs.append(entity_coeffs)
+        entities.append(entity)
 
-df = pd.DataFrame(data, columns=[str(i) for i in range(16)] + ['entity'])
+df_coeffs = pd.DataFrame(coeffs, columns=[str(i) for i in range(16)])
+df_entities = pd.DataFrame(entities, columns=['entity'])
+
+unique_entities = df_entities['entity'].unique()
+unique_entities_size = unique_entities.size
+entity_label_map = {}
+
+for i in range(len(unique_entities)):
+    entity = unique_entities[i]
+    entity_label_map[entity] = i
+
+
+def mapEntityLabelToInt(label):
+    return entity_label_map[label]
+
+df_entities['entity'] = df_entities['entity'].map(lambda x: mapEntityLabelToInt(x))
 
 '''
 ШАГ 3
@@ -57,17 +74,37 @@ df = pd.DataFrame(data, columns=[str(i) for i in range(16)] + ['entity'])
 
 from sklearn.model_selection import train_test_split
 
-X_train, X_test = train_test_split(df, test_size=0.33, random_state=42)
+X_train, X_test, Y_train, Y_test = train_test_split(df_coeffs, df_entities, test_size=0.33, random_state=42)
 
-print(X_train)
-print(X_test)
+# print(X_train)
+# print(X_test)
+#
+# print(Y_train)
+# print(Y_test)
 
 '''
 ШАГ 4
 ОБУЧАЕМ МОДЕЛЬ
 '''
 
+import tensorflow as tf
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(unique_entities_size)
+])
+
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+model.fit(X_train, Y_train, epochs=10)
+
 '''
 ШАГ 5
 ТЕСТИРУЕМ МОДЕЛЬ
 '''
+
+test_loss, test_acc = model.evaluate(X_test, Y_test, verbose=2)
+
+print('\nTest accuracy:', test_acc)
