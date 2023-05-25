@@ -39,33 +39,37 @@ import pandas as pd
 #         print(mfcc.shape)
 #         print(mfcc)
 
-coeffs = []
-entities = []
+data = []
 # lpc
 for entity, files in entity_files_dict.items():
     for file in files:
         y, sr = librosa.load(file)
         lpc = librosa.lpc(y, order=16)
         entity_coeffs = lpc.tolist()[1::]
-        coeffs.append(entity_coeffs)
-        entities.append(entity)
+        data.append(entity_coeffs + [entity])
 
-df_coeffs = pd.DataFrame(coeffs, columns=[str(i) for i in range(16)])
-df_entities = pd.DataFrame(entities, columns=['entity'])
+coeff_names = [str(i) for i in range(16)]
+df = pd.DataFrame(data, columns=coeff_names + ['entity'])
 
-unique_entities = df_entities['entity'].unique()
+unique_entities = df['entity'].unique()
 unique_entities_size = unique_entities.size
 entity_label_map = {}
+entity_id_map = {}
 
 for i in range(len(unique_entities)):
     entity = unique_entities[i]
     entity_label_map[entity] = i
-
+    entity_id_map[str(i)] = entity
 
 def mapEntityLabelToInt(label):
     return entity_label_map[label]
 
-df_entities['entity'] = df_entities['entity'].map(lambda x: mapEntityLabelToInt(x))
+df['entity'] = df['entity'].map(lambda x: mapEntityLabelToInt(x))
+
+def mapIntToEntityLabel(label):
+    return entity_id_map[str(label)]
+
+df['entity_label'] = df['entity'].map(lambda x: mapIntToEntityLabel(x))
 
 '''
 ШАГ 3
@@ -74,7 +78,10 @@ df_entities['entity'] = df_entities['entity'].map(lambda x: mapEntityLabelToInt(
 
 from sklearn.model_selection import train_test_split
 
-X_train, X_test, Y_train, Y_test = train_test_split(df_coeffs, df_entities, test_size=0.33, random_state=42)
+X = df[coeff_names]
+y = df['entity']
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 
 # print(X_train)
 # print(X_test)
@@ -106,5 +113,9 @@ model.fit(X_train, Y_train, epochs=10)
 '''
 
 test_loss, test_acc = model.evaluate(X_test, Y_test, verbose=2)
+
+print(df.groupby('entity_label').size())
+
+print('Train data size:', X.size)
 
 print('\nTest accuracy:', test_acc)
