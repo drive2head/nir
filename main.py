@@ -14,7 +14,7 @@ for record_folder in records_folders:
     for entity_folder in entity_folders:
         entity_records_folder = entity_folder.path
         entity_name = entity_folder.name
-        entity_records_paths = [f.path for f in os.scandir(entity_records_folder)]
+        entity_records_paths = [f.path for f in os.scandir(entity_records_folder) if f.path.split('.')[-1] == 'wav']
 
         if entity_files_dict.get(entity_name) is None:
             entity_files_dict[entity_name] = entity_records_paths
@@ -114,7 +114,8 @@ model.fit(X_train, Y_train, epochs=10)
 
 test_loss, test_acc = model.evaluate(X_test, Y_test, verbose=2)
 
-print(df.groupby('entity_label').size())
+# Выводит количество экзепляров на каждую фонему
+# print(df.groupby('entity_label').size())
 
 print('Train data size:', X.size)
 
